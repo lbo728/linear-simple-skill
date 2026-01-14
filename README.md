@@ -20,7 +20,7 @@ A Claude Code plugin for Linear GraphQL API. Direct curl calls without MCP, impr
 /plugin marketplace add lbo728/linear-simple-skill
 
 # Step 2: Install the plugin
-/plugin install linear-simple@lbo728-marketplace
+/plugin install linear-simple@opengiver
 ```
 
 ### Method 2: Interactive UI
