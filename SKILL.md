@@ -1,19 +1,19 @@
 ---
 name: linear-simple
 description: |
-  Linear GraphQL API를 직접 호출하는 skill. MCP 없이 curl로 이슈 CRUD 수행.
-  사용 시점: (1) Linear 이슈 생성/조회/수정/삭제, (2) 이슈에 코멘트 추가,
-  (3) BYU-XXX 형식의 이슈 identifier 언급 시, (4) "linear" 키워드 포함 시.
-  트리거 예시: "BYU-125 조회해줘", "이슈 만들어줘", "상태를 Done으로 변경해"
+  Direct Linear GraphQL API calls without MCP. Performs issue CRUD via curl.
+  Use when: (1) Creating/reading/updating/deleting Linear issues, (2) Adding comments,
+  (3) BYU-XXX format identifier mentioned, (4) "linear" keyword included.
+  Trigger examples: "Get BYU-125", "Create issue", "Change status to Done"
 ---
 
 # Linear Simple Skill
 
-Linear GraphQL API 직접 호출 가이드.
+Direct Linear GraphQL API call guide.
 
 ## Setup
 
-환경변수 설정 (`.zshrc` 또는 `.bashrc`):
+Set environment variable in `.zshrc` or `.bashrc`:
 ```bash
 export LINEAR_API_KEY="lin_api_xxxxx"
 ```
@@ -40,7 +40,7 @@ export LINEAR_API_KEY="lin_api_xxxxx"
 
 ## Quick Reference
 
-### 이슈 조회 (by identifier)
+### Get Issue (by identifier)
 ```bash
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
@@ -48,7 +48,7 @@ curl -s -X POST https://api.linear.app/graphql \
   -d '{"query":"query{issue(id:\"BYU-125\"){id identifier title description state{name} priority url}}"}'
 ```
 
-### 이슈 목록 조회
+### List Issues
 ```bash
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
@@ -56,17 +56,17 @@ curl -s -X POST https://api.linear.app/graphql \
   -d '{"query":"query{issues(first:10,filter:{team:{key:{eq:\"BYU\"}}}){nodes{id identifier title state{name} priority}}}"}'
 ```
 
-### 이슈 생성
+### Create Issue
 ```bash
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"query":"mutation{issueCreate(input:{title:\"제목\" teamId:\"b0f5047d-bebe-4a1a-8376-58135e7514bb\" description:\"설명\" priority:3}){issue{id identifier title url}}}"}'
+  -d '{"query":"mutation{issueCreate(input:{title:\"Title\" teamId:\"b0f5047d-bebe-4a1a-8376-58135e7514bb\" description:\"Description\" priority:3}){issue{id identifier title url}}}"}'
 ```
 
 Priority: 0=none, 1=urgent, 2=high, 3=medium, 4=low
 
-### 이슈 상태 변경
+### Update Issue Status
 ```bash
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
@@ -74,15 +74,15 @@ curl -s -X POST https://api.linear.app/graphql \
   -d '{"query":"mutation{issueUpdate(id:\"issue-uuid\",input:{stateId:\"state-uuid\"}){issue{id identifier state{name}}}}"}'
 ```
 
-### 코멘트 추가
+### Add Comment
 ```bash
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"query":"mutation{commentCreate(input:{issueId:\"issue-uuid\",body:\"코멘트 내용\"}){comment{id body}}}"}'
+  -d '{"query":"mutation{commentCreate(input:{issueId:\"issue-uuid\",body:\"Comment content\"}){comment{id body}}}"}'
 ```
 
-### 이슈 삭제
+### Delete Issue
 ```bash
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
@@ -92,31 +92,31 @@ curl -s -X POST https://api.linear.app/graphql \
 
 ## Workflow Examples
 
-### 1. 이슈 조회 후 상태 변경
+### 1. Get Issue and Update Status
 ```bash
-# 1. 이슈 조회하여 ID 획득
+# 1. Get issue to obtain ID
 ISSUE=$(curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"query":"query{issue(id:\"BYU-125\"){id}}"}')
 
-# 2. In Progress로 상태 변경
+# 2. Change status to In Progress
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"query":"mutation{issueUpdate(id:\"extracted-id\",input:{stateId:\"1999cc0d-e1dc-4cd5-ad45-48efd0def367\"}){issue{state{name}}}}"}'
 ```
 
-### 2. PR 완료 후 이슈 업데이트
-이슈에 코멘트 추가 + Done 상태로 변경:
+### 2. Update Issue After PR Merge
+Add comment + change status to Done:
 ```bash
-# 코멘트 추가
+# Add comment
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"query":"mutation{commentCreate(input:{issueId:\"issue-uuid\",body:\"PR merged: https://github.com/...\"}){comment{id}}}"}'
 
-# Done으로 변경
+# Change to Done
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
   -H "Content-Type: application/json" \
@@ -125,10 +125,10 @@ curl -s -X POST https://api.linear.app/graphql \
 
 ## Error Handling
 
-- **401**: API 키 확인
-- **400**: GraphQL 쿼리 문법 오류
-- **429**: Rate limit, 잠시 후 재시도
+- **401**: Check API key
+- **400**: GraphQL query syntax error
+- **429**: Rate limit, retry later
 
 ## Advanced Queries
 
-상세 쿼리 패턴은 [references/graphql-patterns.md](references/graphql-patterns.md) 참조.
+See [references/graphql-patterns.md](references/graphql-patterns.md) for detailed query patterns.
