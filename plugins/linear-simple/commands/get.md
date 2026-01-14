@@ -8,29 +8,47 @@ allowed-tools: Bash(curl:*), Bash(cat:*), AskUserQuestion
 
 Fetch issue details for: $ARGUMENTS
 
-## Step 1: Load Config (Hierarchical)
+## Step 1: Check Configs
 
 ```bash
-# Try project config first
-PROJECT_CONFIG=$(cat .claude/linear-simple.json 2>/dev/null)
-
-# Fallback to user config
+# Check user config (API key)
 USER_CONFIG=$(cat ~/.config/linear-simple/config.json 2>/dev/null)
+
+# Check project config
+PROJECT_CONFIG=$(cat .claude/linear-simple.json 2>/dev/null)
 ```
 
-**Config loading priority:**
-1. `.claude/linear-simple.json` (project config) - for team_id, team_key, project_id
-2. `~/.config/linear-simple/config.json` (user config) - for api_key, default_team
+## Step 2: Validate API Key
 
-If no config found at all, prompt user:
-- "Linear 설정이 없습니다. 지금 설정할까요?" with Yes/No options via AskUserQuestion
-- If Yes → guide to run `/linear-simple:setup`
-- If No → abort
+If `USER_CONFIG` is empty or doesn't contain `api_key`:
+- Tell user: "Linear API 키가 설정되지 않았습니다. `/linear-simple:setup`을 실행해주세요."
+- **STOP HERE** - do not proceed
 
-## Step 2: Extract Values
+## Step 3: Check Project Config (IMPORTANT!)
+
+**If `PROJECT_CONFIG` is empty (file doesn't exist):**
+
+You MUST use **AskUserQuestion** to ask:
+- Question: "이 워크스페이스에 Linear 팀/프로젝트 설정이 없습니다. 지금 설정할까요?"
+- Options:
+  - **Yes** - "워크스페이스별 설정을 생성합니다"
+  - **No** - "기본 팀 설정으로 진행합니다"
+
+**If user selects Yes:**
+- Tell user to run `/linear-simple:setup` first
+- **STOP HERE**
+
+**If user selects No:**
+- Check if `USER_CONFIG` has `default_team_key`
+- If no default team, tell user to run `/linear-simple:setup`
+- **STOP HERE**
+
+## Step 4: Extract Values
+
+Only proceed here if config is valid:
 
 ```bash
-# API key is always from user config
+# API key from user config
 API_KEY=$(echo $USER_CONFIG | grep -o '"api_key":"[^"]*"' | cut -d'"' -f4)
 
 # Team info: project config first, then user config fallback
@@ -41,7 +59,7 @@ else
 fi
 ```
 
-## Step 3: Fetch Issue
+## Step 5: Fetch Issue
 
 ```bash
 curl -s -X POST https://api.linear.app/graphql \
@@ -50,12 +68,6 @@ curl -s -X POST https://api.linear.app/graphql \
   -d '{"query":"query{issue(id:\"$ARGUMENTS\"){id identifier title description state{name} priority url assignee{name} project{name} createdAt updatedAt}}"}'
 ```
 
-## Step 4: Display
+## Step 6: Display
 
-Parse and display the issue information in a readable format, including:
-- Identifier, Title
-- Status, Priority
-- Project (if any)
-- Assignee
-- Description
-- URL
+Parse and display the issue information in a readable format.

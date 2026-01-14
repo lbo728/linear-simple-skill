@@ -8,39 +8,49 @@ allowed-tools: Bash(curl:*), Bash(cat:*), AskUserQuestion
 
 Update status for: $ARGUMENTS
 
-## Step 1: Load Config (Hierarchical)
+## Step 1: Check Configs
 
 ```bash
-# Try project config first
-PROJECT_CONFIG=$(cat .claude/linear-simple.json 2>/dev/null)
-
-# Fallback to user config
 USER_CONFIG=$(cat ~/.config/linear-simple/config.json 2>/dev/null)
+PROJECT_CONFIG=$(cat .claude/linear-simple.json 2>/dev/null)
 ```
 
-If no config found, prompt: "Linear 설정이 없습니다. 지금 설정할까요?" (Yes/No)
+## Step 2: Validate API Key
 
-## Step 2: Parse Arguments
+If no `api_key` in `USER_CONFIG`:
+- Tell user: "Linear API 키가 설정되지 않았습니다. `/linear-simple:setup`을 실행해주세요."
+- **STOP HERE**
 
-Parse issue identifier and target status from arguments.
-- If status not provided, ask user which status to set
+## Step 3: Check Project Config (IMPORTANT!)
 
-## Step 3: Extract API Key
+**If `PROJECT_CONFIG` is empty:**
+
+You MUST use **AskUserQuestion**:
+- Question: "이 워크스페이스에 Linear 팀/프로젝트 설정이 없습니다. 지금 설정할까요?"
+- Options:
+  - **Yes** - "워크스페이스별 설정을 생성합니다"
+  - **No** - "기본 팀 설정으로 진행합니다"
+
+**If Yes:** → Run `/linear-simple:setup` → **STOP**
+**If No:** → Check default_team → if missing, **STOP**
+
+## Step 4: Parse Arguments
+
+Extract issue identifier and target status.
+If status not provided, ask user.
+
+## Step 5: Get Issue UUID
 
 ```bash
 API_KEY=$(echo $USER_CONFIG | grep -o '"api_key":"[^"]*"' | cut -d'"' -f4)
-```
 
-## Step 4: Get Issue UUID
-
-```bash
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"query":"query{issue(id:\"IDENTIFIER\"){id}}"}'
 ```
 
-## Step 5: Get Target State UUID
+## Step 6: Get Target State UUID
 
 ```bash
 curl -s -X POST https://api.linear.app/graphql \
@@ -49,7 +59,7 @@ curl -s -X POST https://api.linear.app/graphql \
   -d '{"query":"query{workflowStates(filter:{name:{eq:\"TARGET_STATUS\"}}){nodes{id name}}}"}'
 ```
 
-## Step 6: Update Issue
+## Step 7: Update Issue
 
 ```bash
 curl -s -X POST https://api.linear.app/graphql \
@@ -58,8 +68,6 @@ curl -s -X POST https://api.linear.app/graphql \
   -d '{"query":"mutation{issueUpdate(id:\"ISSUE_UUID\",input:{stateId:\"STATE_UUID\"}){issue{id identifier state{name}}}}"}'
 ```
 
-## Step 7: Confirm
+## Step 8: Confirm
 
-Confirm the status change to user:
-- Issue identifier
-- New status
+Show updated status.

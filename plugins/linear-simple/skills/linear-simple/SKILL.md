@@ -10,9 +10,43 @@ description: |
 
 # Linear Simple Skill
 
-Direct Linear GraphQL API call guide with hierarchical config support.
+Direct Linear GraphQL API calls with hierarchical config.
 
-## Config Structure (Hierarchical)
+## ⚠️ CRITICAL: Config Check Flow (MUST FOLLOW)
+
+Before ANY Linear operation, you MUST:
+
+### Step 1: Check Configs
+```bash
+USER_CONFIG=$(cat ~/.config/linear-simple/config.json 2>/dev/null)
+PROJECT_CONFIG=$(cat .claude/linear-simple.json 2>/dev/null)
+```
+
+### Step 2: Validate API Key
+If `USER_CONFIG` is empty or has no `api_key`:
+- Tell user: "Linear API 키가 설정되지 않았습니다. `/linear-simple:setup`을 실행해주세요."
+- **STOP** - Do not proceed
+
+### Step 3: Check Project Config (MANDATORY!)
+
+**If `PROJECT_CONFIG` is empty (`.claude/linear-simple.json` does not exist):**
+
+You **MUST** use **AskUserQuestion** tool to ask:
+```
+Question: "이 워크스페이스에 Linear 팀/프로젝트 설정이 없습니다. 지금 설정할까요?"
+Options:
+  - Yes: "워크스페이스별 설정을 생성합니다"
+  - No: "기본 팀 설정으로 진행합니다"
+```
+
+**DO NOT SKIP THIS STEP. DO NOT PROCEED WITHOUT ASKING.**
+
+- **If user selects Yes:** Tell them to run `/linear-simple:setup` → **STOP**
+- **If user selects No:** Check if `USER_CONFIG` has `default_team_key`
+  - If no default team → Tell user to run `/linear-simple:setup` → **STOP**
+  - If default team exists → Continue with user config
+
+## Config Structure
 
 ### User Config (`~/.config/linear-simple/config.json`)
 ```json
@@ -23,8 +57,6 @@ Direct Linear GraphQL API call guide with hierarchical config support.
   "default_team_name": "Team Name"
 }
 ```
-- API key is required (organization-level)
-- Default team is optional (fallback when no project config)
 
 ### Project Config (`.claude/linear-simple.json`)
 ```json
@@ -36,26 +68,13 @@ Direct Linear GraphQL API call guide with hierarchical config support.
   "project_name": "Project Name"
 }
 ```
-- Team/project settings specific to this workspace
-- Added to `.gitignore` by default
-- Can be shared with team by removing from `.gitignore`
 
-### Config Loading Priority
-1. `.claude/linear-simple.json` (project config) - for team_id, team_key, project_id
-2. `~/.config/linear-simple/config.json` (user config) - for api_key, default_team (fallback)
-
-### Load Config Pattern
+### Config Loading
 ```bash
-# Try project config first
-PROJECT_CONFIG=$(cat .claude/linear-simple.json 2>/dev/null)
-
-# User config (always needed for API key)
-USER_CONFIG=$(cat ~/.config/linear-simple/config.json 2>/dev/null)
-
-# Extract API key (always from user config)
+# API key always from user config
 API_KEY=$(echo $USER_CONFIG | grep -o '"api_key":"[^"]*"' | cut -d'"' -f4)
 
-# Extract team info (project config first, then fallback)
+# Team info: project config first, user config fallback
 if [ -n "$PROJECT_CONFIG" ]; then
   TEAM_ID=$(echo $PROJECT_CONFIG | grep -o '"team_id":"[^"]*"' | cut -d'"' -f4)
   TEAM_KEY=$(echo $PROJECT_CONFIG | grep -o '"team_key":"[^"]*"' | cut -d'"' -f4)
@@ -67,28 +86,11 @@ else
 fi
 ```
 
-## Setup Flow
-
-### First-time Setup (no API key)
-1. Ask user for Linear API key (from Linear Settings > API)
-2. Save to `~/.config/linear-simple/config.json`
-3. Fetch available teams
-4. Ask: "Set up Linear team/project for this workspace?" (Yes/No via AskUserQuestion)
-   - Yes → Select team/project → Save to `.claude/linear-simple.json` → Add to `.gitignore`
-   - No → Save first team as default in user config
-
-### Existing Setup (API key exists, no project config)
-When user runs a Linear command without project config:
-1. Check if default_team exists in user config → Use it
-2. If no default_team → Ask: "Linear 설정이 없습니다. 지금 설정할까요?" (Yes/No)
-   - Yes → Trigger project setup
-   - No → Abort with message to run `/linear-simple:setup`
-
 ## API Endpoint
 
 `https://api.linear.app/graphql`
 
-## Quick Reference
+## Operations
 
 ### Get Issue
 ```bash
@@ -98,39 +100,30 @@ curl -s -X POST https://api.linear.app/graphql \
   -d '{"query":"query{issue(id:\"BYU-125\"){id identifier title description state{name} priority url project{name}}}"}'
 ```
 
-### List Issues (with project filter if set)
+### List Issues
 ```bash
-# With project_id (efficient)
+# With project filter (if project_id set)
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $API_KEY" \
   -H "Content-Type: application/json" \
   -d "{\"query\":\"query{issues(first:10,filter:{team:{key:{eq:\\\"$TEAM_KEY\\\"}},project:{id:{eq:\\\"$PROJECT_ID\\\"}}}){nodes{id identifier title state{name}}}}\"}"
 
-# Without project_id (all team issues)
+# Without project filter
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $API_KEY" \
   -H "Content-Type: application/json" \
   -d "{\"query\":\"query{issues(first:10,filter:{team:{key:{eq:\\\"$TEAM_KEY\\\"}}}){nodes{id identifier title state{name}}}}\"}"
 ```
 
-### Create Issue (with project if set)
+### Create Issue
 ```bash
-# With project_id
-curl -s -X POST https://api.linear.app/graphql \
-  -H "Authorization: $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d "{\"query\":\"mutation{issueCreate(input:{title:\\\"Title\\\" teamId:\\\"$TEAM_ID\\\" projectId:\\\"$PROJECT_ID\\\" description:\\\"Desc\\\" priority:3}){issue{id identifier url}}}\"}"
-
-# Without project_id
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $API_KEY" \
   -H "Content-Type: application/json" \
   -d "{\"query\":\"mutation{issueCreate(input:{title:\\\"Title\\\" teamId:\\\"$TEAM_ID\\\" description:\\\"Desc\\\" priority:3}){issue{id identifier url}}}\"}"
 ```
 
-Priority: 0=none, 1=urgent, 2=high, 3=medium, 4=low
-
-### Update Issue Status
+### Update Status
 ```bash
 # Get state UUID first
 curl -s -X POST https://api.linear.app/graphql \
@@ -153,16 +146,7 @@ curl -s -X POST https://api.linear.app/graphql \
   -d '{"query":"mutation{commentCreate(input:{issueId:\"issue-uuid\",body:\"Comment\"}){comment{id url}}}"}'
 ```
 
-## Workflow: PR + Comment + Status Update
-
-When user says "Create PR and update Linear issue":
-
-1. Get issue identifier from branch name (e.g., `feature/BYU-125-xxx`)
-2. Create PR with `gh pr create`
-3. Add PR URL as comment to Linear issue
-4. Update issue status to "In Review"
-
-## Fetch Available Teams/Projects
+## Fetch Teams/Projects
 
 ```bash
 # Teams
@@ -171,26 +155,14 @@ curl -s -X POST https://api.linear.app/graphql \
   -H "Content-Type: application/json" \
   -d '{"query":"query{teams{nodes{id name key}}}"}'
 
-# Projects for a team
+# Projects for team
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"query":"query{projects(filter:{accessibleTeams:{id:{eq:\"TEAM_ID\"}}}){nodes{id name}}}"}'
-
-# Workflow states
-curl -s -X POST https://api.linear.app/graphql \
-  -H "Authorization: $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"query{workflowStates{nodes{id name type}}}"}'
 ```
 
 ## Error Handling
 
-- **401**: Invalid API key - run `/linear-simple:setup`
-- **400**: GraphQL syntax error
-- **429**: Rate limit
-- **Config not found**: Run `/linear-simple:setup`
-
-## Advanced Queries
-
-See [references/graphql-patterns.md](references/graphql-patterns.md) for detailed patterns.
+- **401**: Invalid API key → `/linear-simple:setup`
+- **Config not found**: → `/linear-simple:setup`

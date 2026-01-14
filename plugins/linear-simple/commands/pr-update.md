@@ -5,89 +5,90 @@ allowed-tools: Bash(curl:*), Bash(cat:*), Bash(git:*), Bash(gh:*), AskUserQuesti
 
 # PR Update - Combined Action
 
-Create a PR and update the associated Linear issue with comment and status change.
+Create PR and update Linear issue.
 
-## Step 1: Load Config (Hierarchical)
+## Step 1: Check Configs
 
 ```bash
-# Try project config first
-PROJECT_CONFIG=$(cat .claude/linear-simple.json 2>/dev/null)
-
-# Fallback to user config
 USER_CONFIG=$(cat ~/.config/linear-simple/config.json 2>/dev/null)
+PROJECT_CONFIG=$(cat .claude/linear-simple.json 2>/dev/null)
 ```
 
-If no config found, prompt: "Linear 설정이 없습니다. 지금 설정할까요?" (Yes/No)
+## Step 2: Validate API Key
 
-## Step 2: Identify Linear Issue
+If no `api_key`:
+- "Linear API 키가 설정되지 않았습니다. `/linear-simple:setup`을 실행해주세요."
+- **STOP HERE**
 
-Check current branch name for issue identifier:
+## Step 3: Check Project Config (IMPORTANT!)
+
+**If `PROJECT_CONFIG` is empty:**
+
+You MUST use **AskUserQuestion**:
+- Question: "이 워크스페이스에 Linear 팀/프로젝트 설정이 없습니다. 지금 설정할까요?"
+- Options:
+  - **Yes** - "워크스페이스별 설정을 생성합니다"
+  - **No** - "기본 팀 설정으로 진행합니다"
+
+**If Yes:** → `/linear-simple:setup` → **STOP**
+**If No:** → Check default_team → if missing, **STOP**
+
+## Step 4: Identify Linear Issue
+
 ```bash
 git branch --show-current
 ```
 
-Expected format: `feature/BYU-125-some-feature` or `fix/BYU-125-bug-fix`
+Extract issue identifier from branch (e.g., `feature/BYU-125-xxx`).
+If not found, ask user which issue to update.
 
-If no issue identifier found in branch name:
-- Use AskUserQuestion: "Which Linear issue should I update?"
-
-## Step 3: Create PR
+## Step 5: Create PR
 
 ```bash
-# Push if not already pushed
 git push -u origin $(git branch --show-current)
-
-# Create PR
 gh pr create --title "PR_TITLE" --body "PR_BODY"
 ```
 
-Capture the PR URL from the output.
+Capture PR URL.
 
-## Step 4: Extract API Key
+## Step 6: Get Issue UUID
 
 ```bash
 API_KEY=$(echo $USER_CONFIG | grep -o '"api_key":"[^"]*"' | cut -d'"' -f4)
+
+curl -s -X POST https://api.linear.app/graphql \
+  -H "Authorization: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"query{issue(id:\"ISSUE_ID\"){id}}"}'
 ```
 
-## Step 5: Get Issue UUID
+## Step 7: Add PR Comment
 
 ```bash
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"query":"query{issue(id:\"ISSUE_IDENTIFIER\"){id}}"}'
+  -d '{"query":"mutation{commentCreate(input:{issueId:\"UUID\",body:\"🔗 PR: URL\"}){comment{id}}}"}'
 ```
 
-## Step 6: Add PR Link as Comment
+## Step 8: Update Status to "In Review"
 
 ```bash
+# Get In Review state ID
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"query":"mutation{commentCreate(input:{issueId:\"ISSUE_UUID\",body:\"🔗 PR created: PR_URL\\n\\nPR_SUMMARY\"}){comment{id url}}}"}'
-```
+  -d '{"query":"query{workflowStates(filter:{name:{eq:\"In Review\"}}){nodes{id}}}"}'
 
-## Step 7: Get "In Review" State UUID
-
-```bash
+# Update issue
 curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"query":"query{workflowStates(filter:{name:{eq:\"In Review\"}}){nodes{id name}}}"}'
-```
-
-## Step 8: Update Issue Status to "In Review"
-
-```bash
-curl -s -X POST https://api.linear.app/graphql \
-  -H "Authorization: $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"mutation{issueUpdate(id:\"ISSUE_UUID\",input:{stateId:\"IN_REVIEW_STATE_UUID\"}){issue{identifier state{name}}}}"}'
+  -d '{"query":"mutation{issueUpdate(id:\"UUID\",input:{stateId:\"STATE_ID\"}){issue{state{name}}}}"}'
 ```
 
 ## Step 9: Confirm
 
-Show summary:
-- ✓ PR created: [PR_URL]
-- ✓ Comment added to [ISSUE_IDENTIFIER]
-- ✓ Status changed to "In Review"
+- ✓ PR created: [URL]
+- ✓ Comment added to [ISSUE]
+- ✓ Status: In Review
