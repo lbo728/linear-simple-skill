@@ -9,6 +9,7 @@ A Claude Code skill for Linear GraphQL API. Direct curl calls without MCP, impro
 - **Update Issue**: Change status (In Progress, Done, etc.)
 - **Add Comment**: Post comments to issues
 - **Delete Issue**
+- **Auto Setup**: `/linear setup` command configures everything automatically
 
 ## Installation
 
@@ -18,13 +19,20 @@ A Claude Code skill for Linear GraphQL API. Direct curl calls without MCP, impro
 claude /plugin add https://github.com/lbo728/linear-simple-skill
 ```
 
-### Set Environment Variable
+### Setup (Required)
 
-Add to `~/.zshrc` or `~/.bashrc`:
+Run the setup command in Claude Code:
 
-```bash
-export LINEAR_API_KEY="lin_api_xxxxx"
 ```
+/linear setup
+```
+
+Claude will:
+1. Ask for your Linear API key (get from Linear Settings > API)
+2. Automatically fetch your team info
+3. Save configuration to `~/.config/linear-simple/config`
+
+No manual environment variable setup needed!
 
 ## Usage
 
@@ -47,6 +55,17 @@ Just use natural language:
 | **Saved** | **~50,000 tokens (9%)** |
 
 In longer conversations, efficiency gains increase significantly (up to 99% savings).
+
+## Configuration
+
+Config file location: `~/.config/linear-simple/config`
+
+Contains:
+- `LINEAR_API_KEY` - Your Linear API key
+- `LINEAR_TEAM_ID` - Your team's UUID
+- `LINEAR_TEAM_KEY` - Your team's key (e.g., BYU)
+
+To reconfigure, run `/linear setup` again.
 
 ## File Structure
 
