@@ -19,10 +19,10 @@ Claude Code용 Linear GraphQL API 플러그인. MCP 없이 curl로 직접 호출
 
 ```bash
 # 1단계: 마켓플레이스 추가
-/plugin marketplace add lbo728/linear-simple-skill
+/plugin marketplace add lbo728/opengiver-skills
 
 # 2단계: 플러그인 설치
-/plugin install linear-simple@opengiver
+/plugin install linear-simple@opengiver-skills
 
 # 3단계: Claude Code 재시작
 ```
@@ -33,7 +33,7 @@ Claude Code용 Linear GraphQL API 플러그인. MCP 없이 curl로 직접 호출
 # 플러그인 매니저 열기
 /plugin
 
-# "Marketplaces" 탭 → Add → 입력: lbo728/linear-simple-skill
+# "Marketplaces" 탭 → Add → 입력: lbo728/opengiver-skills
 # "Discover" 탭으로 이동 → "linear-simple" 찾기 → Install
 ```
 
@@ -41,8 +41,8 @@ Claude Code용 Linear GraphQL API 플러그인. MCP 없이 curl로 직접 호출
 
 ```bash
 # 저장소 클론 후 스킬 디렉토리로 복사
-git clone https://github.com/lbo728/linear-simple-skill.git
-cp -r linear-simple-skill/plugins/linear-simple ~/.claude/plugins/
+git clone https://github.com/lbo728/opengiver-skills.git
+cp -r opengiver-skills/plugins/linear-simple ~/.claude/plugins/
 ```
 
 ## 설정 (필수)
@@ -175,7 +175,7 @@ Claude가 자동으로:
 ## 저장소 구조
 
 ```
-linear-simple-skill/
+opengiver-skills/
 ├── .claude-plugin/
 │   └── marketplace.json          # 마켓플레이스 레지스트리
 ├── plugins/

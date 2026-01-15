@@ -19,10 +19,10 @@ A Claude Code plugin for Linear GraphQL API. Direct curl calls without MCP, impr
 
 ```bash
 # Step 1: Add the marketplace
-/plugin marketplace add lbo728/linear-simple-skill
+/plugin marketplace add lbo728/opengiver-skills
 
 # Step 2: Install the plugin
-/plugin install linear-simple@opengiver
+/plugin install linear-simple@opengiver-skills
 
 # Step 3: Restart Claude Code
 ```
@@ -33,7 +33,7 @@ A Claude Code plugin for Linear GraphQL API. Direct curl calls without MCP, impr
 # Open plugin manager
 /plugin
 
-# Navigate to "Marketplaces" tab → Add → Enter: lbo728/linear-simple-skill
+# Navigate to "Marketplaces" tab → Add → Enter: lbo728/opengiver-skills
 # Then go to "Discover" tab → Find "linear-simple" → Install
 ```
 
@@ -41,8 +41,8 @@ A Claude Code plugin for Linear GraphQL API. Direct curl calls without MCP, impr
 
 ```bash
 # Clone and copy to your skills directory
-git clone https://github.com/lbo728/linear-simple-skill.git
-cp -r linear-simple-skill/plugins/linear-simple ~/.claude/plugins/
+git clone https://github.com/lbo728/opengiver-skills.git
+cp -r opengiver-skills/plugins/linear-simple ~/.claude/plugins/
 ```
 
 ## Setup (Required)
@@ -175,7 +175,7 @@ In longer conversations, efficiency gains increase significantly (up to 99% savi
 ## Repository Structure
 
 ```
-linear-simple-skill/
+opengiver-skills/
 ├── .claude-plugin/
 │   └── marketplace.json          # Marketplace registry
 ├── plugins/
