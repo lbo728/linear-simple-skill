@@ -1,30 +1,35 @@
-# Linear Simple Skill
+# Opengiver Skills
 
 [English](README.md) | [한국어](README.ko.md)
 
-Claude Code용 Linear GraphQL API 플러그인. MCP 없이 curl로 직접 호출하여 토큰 효율성을 50-70% 향상시킵니다.
+Claude Code를 위한 생산성 플러그인 모음. 프로젝트 관리, 콘텐츠 제작, 워크플로우 최적화를 위한 AI 자동화 도구입니다.
 
-## 기능
+**기여를 환영합니다!** 플러그인 개선 아이디어가 있거나 새 플러그인을 추가하고 싶으시면 [PR을 보내주세요](#기여하기).
 
-- **이슈 생성**: 제목, 설명, 우선순위 설정
-- **이슈 조회**: 식별자로 조회 (예: BYU-125)
-- **이슈 업데이트**: 상태 변경 (진행중, 완료 등)
-- **댓글 추가**: 이슈에 댓글 달기
-- **PR 업데이트**: PR 생성 + 댓글 + 상태 변경을 한 번에
-- **계층형 설정**: User 레벨 API 키 + 프로젝트 레벨 팀/프로젝트 설정
+## 플러그인이란?
+
+플러그인은 Claude Code의 기능을 확장하는 전문 도구입니다. 각 플러그인은 특정 작업을 위한 명령어, 스킬, 워크플로우를 제공합니다. 설치하면 Claude Code가 관련 작업을 인식하고 적절한 도구를 자동으로 적용합니다.
+
+## 사용 가능한 플러그인
+
+| 플러그인 | 설명 | 명령어 |
+|----------|------|--------|
+| [linear-simple](plugins/linear-simple) | 이슈 관리를 위한 Linear GraphQL API | `/linear-simple:setup`, `/linear-simple:get`, `/linear-simple:create` |
+| [blog-material-gen](plugins/blog-material-gen) | Git 브랜치에서 Notion으로 블로그 소재 자동 생성 | `/blog-material-gen:setup`, `/blog-material-gen` |
 
 ## 설치
 
-### 방법 1: 마켓플레이스 (권장)
+### 방법 1: Claude Code 플러그인 (권장)
+
+Claude Code의 내장 플러그인 시스템으로 설치:
 
 ```bash
-# 1단계: 마켓플레이스 추가
+# 마켓플레이스 추가
 /plugin marketplace add lbo728/opengiver-skills
 
-# 2단계: 플러그인 설치
+# 특정 플러그인 설치
 /plugin install linear-simple@opengiver-skills
-
-# 3단계: Claude Code 재시작
+/plugin install blog-material-gen@opengiver-skills
 ```
 
 ### 방법 2: UI로 설치
@@ -34,143 +39,55 @@ Claude Code용 Linear GraphQL API 플러그인. MCP 없이 curl로 직접 호출
 /plugin
 
 # "Marketplaces" 탭 → Add → 입력: lbo728/opengiver-skills
-# "Discover" 탭으로 이동 → "linear-simple" 찾기 → Install
+# "Discover" 탭으로 이동 → 플러그인 찾기 → Install
 ```
 
-### 방법 3: 수동 설치
+### 방법 3: 저장소 클론
+
+전체 레포를 클론하여 plugins 폴더 복사:
 
 ```bash
-# 저장소 클론 후 스킬 디렉토리로 복사
 git clone https://github.com/lbo728/opengiver-skills.git
-cp -r opengiver-skills/plugins/linear-simple ~/.claude/plugins/
+cp -r opengiver-skills/plugins/* ~/.claude/plugins/
 ```
 
-## 설정 (필수)
+## 플러그인 상세
 
-설치 후 Linear API를 설정하세요:
+### linear-simple
 
+MCP 없이 Linear GraphQL API를 직접 호출하여 토큰 효율성을 50-70% 향상.
+
+**기능:**
+- 이슈 CRUD (생성, 조회, 수정, 삭제)
+- 댓글 관리
+- 상태 업데이트
+- PR + Linear 동기화
+
+**설정:**
 ```bash
 /linear-simple:setup
 ```
 
-Claude가 자동으로:
-1. Linear API 키를 요청합니다 (Linear 설정 > API에서 발급)
-2. API 키를 `~/.config/linear-simple/config.json`에 저장합니다
-3. "이 워크스페이스에 Linear 팀/프로젝트를 설정할까요?" (Yes/No)
-   - **Yes** → 팀/프로젝트 선택 → `.claude/linear-simple.json`에 저장 (`.gitignore`에 추가됨)
-   - **No** → user config의 기본 팀 사용
+[전체 문서 보기 →](plugins/linear-simple/README.ko.md)
 
-팀원과 워크스페이스 설정을 공유하려면 `.gitignore`에서 `.claude/linear-simple.json`을 제거하세요.
+---
 
-## 설정 파일
+### blog-material-gen
 
-### 계층형 설정 구조
+Daily Git 브랜치를 자동 분석하여 Notion 데이터베이스에 블로그 소재 생성.
 
-| 레벨 | 위치 | 내용 |
-|------|------|------|
-| User | `~/.config/linear-simple/config.json` | API 키, 기본 팀 |
-| Project | `.claude/linear-simple.json` | 팀, 프로젝트 (워크스페이스별) |
+**기능:**
+- Git 브랜치/커밋 분석
+- Notion 페이지 자동 생성
+- 민감 정보 마스킹
+- Slack 알림 (선택)
 
-### User Config (`~/.config/linear-simple/config.json`)
-```json
-{
-  "api_key": "lin_api_xxxxx",
-  "default_team_id": "uuid",
-  "default_team_key": "BYU",
-  "default_team_name": "팀 이름"
-}
-```
-
-### Project Config (`.claude/linear-simple.json`)
-```json
-{
-  "team_id": "uuid",
-  "team_key": "BYU",
-  "team_name": "팀 이름",
-  "project_id": "uuid",
-  "project_name": "Bookgolas"
-}
-```
-
-**로딩 우선순위:**
-1. 프로젝트 config (있으면) → 팀/프로젝트 정보
-2. User config → API 키 + fallback 팀
-
-## 사용법
-
-### 슬래시 명령어
+**설정:**
 ```bash
-/linear-simple:setup                        # API 및 프로젝트 설정
-/linear-simple:get BYU-125                  # 이슈 상세 조회
-/linear-simple:list                         # 최근 이슈 목록 (개수 물어봄)
-/linear-simple:list 10                      # 최근 10개 이슈 목록
-/linear-simple:create "API 버그 수정"        # 새 이슈 생성
-/linear-simple:status BYU-125 "In Progress" # 상태 변경
-/linear-simple:comment BYU-125 "완료!"       # 댓글 추가
-/linear-simple:pr-update                    # PR + 댓글 + 상태 업데이트
+/blog-material-gen:setup
 ```
 
-### 자연어
-
-**이슈 조회**
-```
-"BYU-125 이슈를 읽고 구현 계획을 세워줘"
-"BYU-125 내용이 뭐야? 요구사항 파악해야해"
-"BYU-125 상세 보여줘"
-```
-
-**이슈 목록**
-```
-"최근 10개 이슈 보여줘"
-"지금 진행중인 이슈들 뭐 있어?"
-"백로그 이슈 리스트 보여줘"
-```
-
-**이슈 생성**
-```
-"이슈 생성해줘"
-→ 에이전트: "어떤 제목과 설명으로 만들까요?"
-→ 사용자: "제목: [Product] 결제 플로우 구현
-          설명: (제목에 맞게 적당히 작성해줘)"
-
-"방금 얘기한 로그인 버그 이슈로 만들어줘"
-"이슈 추가해: API 속도 제한 구현"
-```
-
-**상태 변경**
-```
-"BYU-125 상태를 진행중으로 바꿔"
-"BYU-125 완료 처리해줘"
-"BYU-125 리뷰중으로 변경해"
-```
-
-**댓글 추가**
-```
-"PR 만들고, 이 작업 이슈에 코멘트 달아줘"
-→ 에이전트가 컨텍스트에서 이슈 번호 확인 후 PR 생성, PR 내용을 코멘트로 등록
-
-"BYU-125에 '구현 시작' 코멘트 달아"
-"BYU-125에 오늘 진행 상황 메모해줘"
-```
-
-**PR + 업데이트 (통합)**
-```
-"PR 생성하고 Linear 이슈도 업데이트해"
-→ 에이전트: PR 생성 → PR 링크를 코멘트로 추가 → 상태를 "In Review"로 변경
-
-"이 PR 푸시하고 Linear랑 동기화해줘"
-"작업 마무리해줘 - PR 만들고 이슈는 리뷰중으로"
-```
-
-## 토큰 효율성: MCP vs Skill
-
-| 방식 | 토큰 (10회 작업) |
-|------|------------------|
-| MCP | ~570,000 토큰 |
-| Skill | ~520,000 토큰 |
-| **절감** | **~50,000 토큰 (9%)** |
-
-긴 대화에서는 효율성이 크게 증가합니다 (최대 99% 절감).
+[전체 문서 보기 →](plugins/blog-material-gen/README.ko.md)
 
 ## 저장소 구조
 
@@ -179,26 +96,57 @@ opengiver-skills/
 ├── .claude-plugin/
 │   └── marketplace.json          # 마켓플레이스 레지스트리
 ├── plugins/
-│   └── linear-simple/
+│   ├── linear-simple/            # Linear API 플러그인
+│   │   ├── .claude-plugin/
+│   │   ├── commands/
+│   │   ├── skills/
+│   │   └── README.md
+│   └── blog-material-gen/        # 블로그 소재 생성 플러그인
 │       ├── .claude-plugin/
-│       │   └── plugin.json       # 플러그인 매니페스트
 │       ├── commands/
-│       │   ├── setup.md          # /linear-simple:setup
-│       │   ├── get.md            # /linear-simple:get
-│       │   ├── list.md           # /linear-simple:list
-│       │   ├── create.md         # /linear-simple:create
-│       │   ├── status.md         # /linear-simple:status
-│       │   ├── comment.md        # /linear-simple:comment
-│       │   └── pr-update.md      # /linear-simple:pr-update
-│       └── skills/
-│           └── linear-simple/
-│               ├── SKILL.md      # 자연어 스킬
-│               └── references/
-│                   └── graphql-patterns.md
+│       ├── skills/
+│       ├── scripts/
+│       └── README.md
 ├── README.md
 └── README.ko.md
 ```
 
+## 기여하기
+
+플러그인 개선 방법을 찾으셨나요? 새 플러그인을 제안하고 싶으신가요? PR과 이슈를 환영합니다!
+
+**기여 아이디어:**
+- 기존 플러그인 설명 개선
+- 기존 플러그인에 새 기능 추가
+- 버그 수정 또는 문서 명확화
+- 새 플러그인 제안 (먼저 이슈로 논의)
+
+**기여 방법:**
+
+1. 레포 Fork
+2. 새 브랜치 생성
+3. 변경 사항 작성
+4. 명확한 설명과 함께 PR 제출
+
+### 플러그인 구조
+
+각 플러그인은 다음 구조를 따릅니다:
+
+```
+plugins/
+  plugin-name/
+    .claude-plugin/
+      plugin.json           # 플러그인 매니페스트
+    commands/
+      setup.md              # /plugin-name:setup
+      command.md            # /plugin-name:command
+    skills/
+      plugin-name/
+        SKILL.md            # 자연어 스킬
+    README.md               # 플러그인 문서
+    README.ko.md            # 한글 문서
+```
+
 ## 라이선스
 
-MIT
+MIT - 자유롭게 사용하세요.

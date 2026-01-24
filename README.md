@@ -1,176 +1,93 @@
-# Linear Simple Skill
+# Opengiver Skills
 
 [English](README.md) | [한국어](README.ko.md)
 
-A Claude Code plugin for Linear GraphQL API. Direct curl calls without MCP, improving token efficiency by 50-70%.
+A collection of productivity plugins for Claude Code. Built for developers who want AI-powered automation for project management, content creation, and workflow optimization.
 
-## Features
+**Contributions welcome!** Found a way to improve a plugin or have a new one to add? [Open a PR](#contributing).
 
-- **Create Issue**: Set title, description, priority
-- **Get Issue**: Query by identifier (e.g., BYU-125)
-- **Update Issue**: Change status (In Progress, Done, etc.)
-- **Add Comment**: Post comments to issues
-- **PR Update**: Create PR + add comment + update status in one command
-- **Hierarchical Config**: User-level API key + project-level team/project settings
+## What are Plugins?
+
+Plugins are specialized tools that extend Claude Code's capabilities. Each plugin provides commands, skills, and workflows for specific tasks. When installed, Claude Code can recognize when you're working on related tasks and apply the right tools automatically.
+
+## Available Plugins
+
+| Plugin | Description | Commands |
+|--------|-------------|----------|
+| [linear-simple](plugins/linear-simple) | Linear GraphQL API for issue management | `/linear-simple:setup`, `/linear-simple:get`, `/linear-simple:create` |
+| [blog-material-gen](plugins/blog-material-gen) | Auto-generate blog material from Git branches to Notion | `/blog-material-gen:setup`, `/blog-material-gen` |
 
 ## Installation
 
-### Method 1: Marketplace (Recommended)
+### Option 1: Claude Code Plugin (Recommended)
+
+Install via Claude Code's built-in plugin system:
 
 ```bash
-# Step 1: Add the marketplace
+# Add the marketplace
 /plugin marketplace add lbo728/opengiver-skills
 
-# Step 2: Install the plugin
+# Install specific plugin
 /plugin install linear-simple@opengiver-skills
-
-# Step 3: Restart Claude Code
+/plugin install blog-material-gen@opengiver-skills
 ```
 
-### Method 2: Interactive UI
+### Option 2: Interactive UI
 
 ```bash
 # Open plugin manager
 /plugin
 
 # Navigate to "Marketplaces" tab → Add → Enter: lbo728/opengiver-skills
-# Then go to "Discover" tab → Find "linear-simple" → Install
+# Then go to "Discover" tab → Find plugin → Install
 ```
 
-### Method 3: Manual Installation
+### Option 3: Clone and Copy
+
+Clone the entire repo and copy the plugins folder:
 
 ```bash
-# Clone and copy to your skills directory
 git clone https://github.com/lbo728/opengiver-skills.git
-cp -r opengiver-skills/plugins/linear-simple ~/.claude/plugins/
+cp -r opengiver-skills/plugins/* ~/.claude/plugins/
 ```
 
-## Setup (Required)
+## Plugin Details
 
-After installation, configure your Linear API:
+### linear-simple
 
+Direct Linear GraphQL API calls without MCP, improving token efficiency by 50-70%.
+
+**Features:**
+- Issue CRUD (Create, Read, Update, Delete)
+- Comment management
+- Status updates
+- PR + Linear sync
+
+**Setup:**
 ```bash
 /linear-simple:setup
 ```
 
-Claude will:
-1. Ask for your Linear API key (get from Linear Settings > API)
-2. Save API key to `~/.config/linear-simple/config.json`
-3. Ask: "Set up Linear team/project for this workspace?" (Yes/No)
-   - **Yes** → Select team/project → Save to `.claude/linear-simple.json` (added to `.gitignore`)
-   - **No** → Use default team from user config
+[View full documentation →](plugins/linear-simple/README.md)
 
-To share workspace config with your team, remove `.claude/linear-simple.json` from `.gitignore`.
+---
 
-## Configuration
+### blog-material-gen
 
-### Hierarchical Config Structure
+Automatically analyze daily Git branches and generate blog material to Notion database.
 
-| Level | Location | Contains |
-|-------|----------|----------|
-| User | `~/.config/linear-simple/config.json` | API key, default team |
-| Project | `.claude/linear-simple.json` | Team, project (workspace-specific) |
+**Features:**
+- Git branch/commit analysis
+- Notion page auto-creation
+- Sensitive data masking
+- Slack notifications (optional)
 
-### User Config (`~/.config/linear-simple/config.json`)
-```json
-{
-  "api_key": "lin_api_xxxxx",
-  "default_team_id": "uuid",
-  "default_team_key": "BYU",
-  "default_team_name": "Team Name"
-}
-```
-
-### Project Config (`.claude/linear-simple.json`)
-```json
-{
-  "team_id": "uuid",
-  "team_key": "BYU",
-  "team_name": "Team Name",
-  "project_id": "uuid",
-  "project_name": "Bookgolas"
-}
-```
-
-**Loading Priority:**
-1. Project config (if exists) → for team/project
-2. User config → for API key + fallback team
-
-## Usage
-
-### Slash Commands
+**Setup:**
 ```bash
-/linear-simple:setup                        # Configure API and project
-/linear-simple:get BYU-125                  # Get issue details
-/linear-simple:list                         # List recent issues (asks for count)
-/linear-simple:list 10                      # List recent 10 issues
-/linear-simple:create "Fix API bug"         # Create new issue
-/linear-simple:status BYU-125 "In Progress" # Update status
-/linear-simple:comment BYU-125 "Done!"      # Add comment
-/linear-simple:pr-update                    # PR + comment + status update
+/blog-material-gen:setup
 ```
 
-### Natural Language
-
-**Get Issue**
-```
-"Read issue BYU-125 and help me plan the implementation"
-"What's in BYU-125? I need to understand the requirements"
-"Show me BYU-125 details"
-```
-
-**List Issues**
-```
-"Show me the recent 10 issues"
-"What issues are currently in progress?"
-"List all backlog items"
-```
-
-**Create Issue**
-```
-"Create an issue"
-→ Agent: "What title and description should I use?"
-→ You: "Title: [Product] Implement checkout flow
-        Description: (generate something appropriate based on the title)"
-
-"Make a new issue for the login bug we just discussed"
-"Add an issue: API rate limiting implementation"
-```
-
-**Update Status**
-```
-"Change BYU-125 to In Progress"
-"Mark BYU-125 as Done"
-"Set BYU-125 to In Review"
-```
-
-**Add Comment**
-```
-"Create a PR and add a comment to this task's issue"
-→ Agent checks context for issue number, creates PR, and posts PR details as comment
-
-"Comment on BYU-125: Started implementation"
-"Add note to BYU-125 with today's progress"
-```
-
-**PR + Update (Combined)**
-```
-"Create PR and update the Linear issue"
-→ Agent: Creates PR, adds PR link as comment, changes status to "In Review"
-
-"Push this PR and sync with Linear"
-"Finish this task - create PR and mark issue as In Review"
-```
-
-## Token Efficiency: MCP vs Skill
-
-| Method | Tokens (10 operations) |
-|--------|------------------------|
-| MCP | ~570,000 tokens |
-| Skill | ~520,000 tokens |
-| **Saved** | **~50,000 tokens (9%)** |
-
-In longer conversations, efficiency gains increase significantly (up to 99% savings).
+[View full documentation →](plugins/blog-material-gen/README.md)
 
 ## Repository Structure
 
@@ -179,26 +96,57 @@ opengiver-skills/
 ├── .claude-plugin/
 │   └── marketplace.json          # Marketplace registry
 ├── plugins/
-│   └── linear-simple/
+│   ├── linear-simple/            # Linear API plugin
+│   │   ├── .claude-plugin/
+│   │   ├── commands/
+│   │   ├── skills/
+│   │   └── README.md
+│   └── blog-material-gen/        # Blog material generator plugin
 │       ├── .claude-plugin/
-│       │   └── plugin.json       # Plugin manifest
 │       ├── commands/
-│       │   ├── setup.md          # /linear-simple:setup
-│       │   ├── get.md            # /linear-simple:get
-│       │   ├── list.md           # /linear-simple:list
-│       │   ├── create.md         # /linear-simple:create
-│       │   ├── status.md         # /linear-simple:status
-│       │   ├── comment.md        # /linear-simple:comment
-│       │   └── pr-update.md      # /linear-simple:pr-update
-│       └── skills/
-│           └── linear-simple/
-│               ├── SKILL.md      # Natural language skill
-│               └── references/
-│                   └── graphql-patterns.md
+│       ├── skills/
+│       ├── scripts/
+│       └── README.md
 ├── README.md
 └── README.ko.md
 ```
 
+## Contributing
+
+Found a way to improve a plugin? Have a new plugin to suggest? PRs and issues welcome!
+
+**Ideas for contributions:**
+- Improve existing plugin instructions
+- Add new features to existing plugins
+- Fix bugs or clarify documentation
+- Suggest new plugins (open an issue first to discuss)
+
+**How to contribute:**
+
+1. Fork the repo
+2. Create a new branch
+3. Make your changes
+4. Submit a PR with a clear description
+
+### Plugin Structure
+
+Each plugin follows this structure:
+
+```
+plugins/
+  plugin-name/
+    .claude-plugin/
+      plugin.json           # Plugin manifest
+    commands/
+      setup.md              # /plugin-name:setup
+      command.md            # /plugin-name:command
+    skills/
+      plugin-name/
+        SKILL.md            # Natural language skill
+    README.md               # Plugin documentation
+    README.ko.md            # Korean documentation
+```
+
 ## License
 
-MIT
+MIT - Use these however you want.

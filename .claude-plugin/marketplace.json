@@ -5,7 +5,7 @@
     "email": "lbo728@users.noreply.github.com"
   },
   "metadata": {
-    "description": "Linear Simple Skill - Direct Linear GraphQL API calls without MCP"
+    "description": "Claude Code plugins for productivity: Linear API, Blog Material Generator, and more"
   },
   "plugins": [
     {
@@ -13,6 +13,12 @@
       "source": "./plugins/linear-simple",
       "description": "Linear GraphQL API skill for issue CRUD, comments, and status changes",
       "version": "1.1.6"
+    },
+    {
+      "name": "blog-material-gen",
+      "source": "./plugins/blog-material-gen",
+      "description": "Auto-generate blog material from daily branch to Notion with Slack notifications",
+      "version": "1.0.0"
     }
   ]
 }

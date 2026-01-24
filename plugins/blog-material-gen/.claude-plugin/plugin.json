@@ -1,0 +1,5 @@
+{
+  "name": "blog-material-gen",
+  "description": "Daily branch PR merge → auto-generate blog material to Notion. Supports Slack notifications.",
+  "version": "1.0.0"
+}

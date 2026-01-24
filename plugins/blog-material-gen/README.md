@@ -1,0 +1,194 @@
+# Blog Material Generator
+
+[English](README.md) | [한국어](README.ko.md)
+
+| | |
+|---|---|
+| **Name** | blog-material-gen |
+| **Description** | Auto-generate blog material from daily Git branches to Notion with Slack notifications |
+| **Version** | 1.0.0 |
+| **Triggers** | "blog material", "daily branch analysis", "generate writing material" |
+
+---
+
+A Claude Code plugin that automatically analyzes daily Git branches and generates blog material to Notion database.
+
+## Features
+
+- Git branch/commit analysis → Auto-extract blog ideas
+- Date-based Notion page creation
+- Same date, different workspace → Append to existing page with `[workspace]` tag
+- Auto-mask sensitive data (API keys, tokens, passwords, etc.)
+- Slack notifications (optional)
+
+## Installation
+
+### Method 1: Marketplace (Recommended)
+
+```bash
+# Step 1: Add the marketplace
+/plugin marketplace add lbo728/opengiver-skills
+
+# Step 2: Install the plugin
+/plugin install blog-material-gen@opengiver-skills
+
+# Step 3: Restart Claude Code
+```
+
+### Method 2: Interactive UI
+
+```bash
+# Open plugin manager
+/plugin
+
+# Navigate to "Marketplaces" tab → Add → Enter: lbo728/opengiver-skills
+# Then go to "Discover" tab → Find "blog-material-gen" → Install
+```
+
+## Setup
+
+### 1. Create Notion Integration
+
+1. Visit [Notion Integrations](https://www.notion.so/my-integrations)
+2. Click "New integration"
+3. Enter name (e.g., "Blog Material Gen")
+4. Select associated workspace
+5. "Submit" → Copy API Key (`secret_xxx...`)
+
+### 2. Connect Notion Database
+
+1. Open your target database in Notion
+2. Click `...` → "Connections" → "Connect to" → Select your integration
+3. Get Database ID from URL:
+   ```
+   https://notion.so/myworkspace/abc123def456...?v=...
+                               ^^^^^^^^^^^^^^^^
+                               This is the Database ID
+   ```
+
+### 3. Run Setup Command
+
+```bash
+/blog-material-gen:setup
+```
+
+Agent will ask for the following:
+
+| Item | Required | Description |
+|------|----------|-------------|
+| Notion API Key | Yes | Key starting with `secret_` |
+| Database ID | Yes | 32-character hex string |
+| Slack Webhook URL | No | Webhook URL for notifications |
+
+Configuration is saved to `~/.config/blog-material-gen/config.json`.
+
+## Slack Notifications (Optional)
+
+### Create Webhook URL
+
+1. [Slack API](https://api.slack.com/apps) → "Create New App" → "From scratch"
+2. Enter app name, select workspace
+3. "Incoming Webhooks" → "Activate Incoming Webhooks" ON
+4. "Add New Webhook to Workspace" → Select channel → "Allow"
+5. Copy Webhook URL (`https://hooks.slack.com/services/...`)
+
+### Notification Content
+
+On successful pipeline, Slack receives:
+
+- Date
+- Workspace name
+- Number of branches analyzed
+- Number of blog ideas generated
+- Notion page link button
+
+## Usage
+
+### Automatic Execution (Recommended)
+
+If your `AGENTS.md` includes the Blog Material Generation Protocol, the agent automatically runs after daily → dev PR merge.
+
+### Manual Execution
+
+```bash
+/blog-material-gen
+```
+
+Or specify a branch:
+
+```
+"Analyze daily/2026-01-24 branch"
+"Generate blog material"
+```
+
+## Output
+
+### Notion Page Structure
+
+```
+📝 2026-01-24 Writing Material
+
+## Today's Summary
+Today, through 15 commits across 3 feature branches...
+
+## Blog Ideas
+1. Implementing JWT Authentication in TypeScript
+2. Optimizing Server State with React Query
+
+## [opengiver-skills] Work Details
+### feature/add-auth
+- Requirements: Add user authentication
+- Tech: TypeScript, React
+- Code examples: ...
+- Troubleshooting: ...
+- Learnings: ...
+
+## [another-project] Work Details  ← Same date, different workspace
+### feature/update-ui
+...
+```
+
+## Plugin Structure
+
+```
+blog-material-gen/
+├── .claude-plugin/
+│   └── plugin.json           # Plugin manifest
+├── commands/
+│   └── setup.md              # /blog-material-gen:setup
+├── skills/
+│   └── blog-material-gen/
+│       └── SKILL.md          # Natural language skill
+├── scripts/
+│   ├── types.ts              # Type definitions
+│   ├── git-analyzer.ts       # Git analysis
+│   ├── code-masker.ts        # Sensitive data masking
+│   ├── notion-client.ts      # Notion API client
+│   └── pipeline.ts           # Main pipeline
+├── package.json              # Dependencies
+├── README.md
+└── README.ko.md
+```
+
+## Troubleshooting
+
+### "Configuration not complete"
+
+```bash
+/blog-material-gen:setup
+```
+
+### "Failed to connect to Notion"
+
+1. Verify API Key starts with `secret_`
+2. Check Integration is connected to the database
+3. Verify Database ID is correct
+
+### Slack notifications not working
+
+1. Verify Webhook URL starts with `https://hooks.slack.com/services/`
+2. Ensure Slack App has access to the channel
+
+## License
+
+MIT
