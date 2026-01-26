@@ -16,7 +16,7 @@ Plugins are specialized tools that extend Claude Code's capabilities. Each plugi
 |--------|-------------|----------|
 | [linear-simple](plugins/linear-simple) | Linear GraphQL API for issue management | `/linear-simple:setup`, `/linear-simple:get`, `/linear-simple:create` |
 | [blog-material-gen](plugins/blog-material-gen) | Auto-generate blog material from Git branches to Notion | `/blog-material-gen:setup`, `/blog-material-gen` |
-| [product-launch-strategist](plugins/product-launch-strategist) | Product launch strategy advisor for indie developers | Natural language triggers |
+| [product-launch-strategist](plugins/product-launch-strategist) | Product launch strategy advisor for indie developers | `/product-launch-strategist:analyze`, `:pricing`, `:risk` |
 
 ## Installation
 
@@ -134,6 +134,7 @@ opengiver-skills/
 │   │   └── README.md
 │   └── product-launch-strategist/ # Product launch advisor plugin
 │       ├── .claude-plugin/
+│       ├── commands/
 │       ├── skills/
 │       └── README.md
 ├── README.md

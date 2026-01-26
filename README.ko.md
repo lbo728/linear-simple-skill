@@ -16,7 +16,7 @@ Claude Code를 위한 생산성 플러그인 모음. 프로젝트 관리, 콘텐
 |----------|------|--------|
 | [linear-simple](plugins/linear-simple) | 이슈 관리를 위한 Linear GraphQL API | `/linear-simple:setup`, `/linear-simple:get`, `/linear-simple:create` |
 | [blog-material-gen](plugins/blog-material-gen) | Git 브랜치에서 Notion으로 블로그 소재 자동 생성 | `/blog-material-gen:setup`, `/blog-material-gen` |
-| [product-launch-strategist](plugins/product-launch-strategist) | 인디 개발자를 위한 제품 출시 전략 어드바이저 | 자연어 트리거 |
+| [product-launch-strategist](plugins/product-launch-strategist) | 인디 개발자를 위한 제품 출시 전략 어드바이저 | `/product-launch-strategist:analyze`, `:pricing`, `:risk` |
 
 ## 설치
 
@@ -134,6 +134,7 @@ opengiver-skills/
 │   │   └── README.md
 │   └── product-launch-strategist/ # 제품 출시 전략 플러그인
 │       ├── .claude-plugin/
+│       ├── commands/
 │       ├── skills/
 │       └── README.md
 ├── README.md

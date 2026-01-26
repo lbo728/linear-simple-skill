@@ -8,6 +8,7 @@
 | **Description** | Product launch strategy advisor for indie developers and small teams |
 | **Version** | 1.0.0 |
 | **Triggers** | "Should I launch this?", "pricing strategy", "competitive analysis", "비즈니스 모델 검토" |
+| **Commands** | `/product-launch-strategist:analyze`, `/product-launch-strategist:pricing`, etc. |
 
 ---
 
@@ -53,6 +54,17 @@ cp -r opengiver-skills/plugins/product-launch-strategist ~/.claude/plugins/
 ```
 
 ## Usage
+
+### Slash Commands
+
+```bash
+/product-launch-strategist:analyze      # Full analysis (all frameworks)
+/product-launch-strategist:competitive  # Competitive analysis only
+/product-launch-strategist:pricing      # Pricing strategy only
+/product-launch-strategist:cost         # Cost analysis only
+/product-launch-strategist:checklist    # Launch readiness checklist
+/product-launch-strategist:risk         # Risk assessment only
+```
 
 ### Natural Language Triggers
 
@@ -150,6 +162,13 @@ All analyses include:
 product-launch-strategist/
 ├── .claude-plugin/
 │   └── plugin.json
+├── commands/
+│   ├── analyze.md              # /product-launch-strategist:analyze
+│   ├── competitive.md          # /product-launch-strategist:competitive
+│   ├── pricing.md              # /product-launch-strategist:pricing
+│   ├── cost.md                 # /product-launch-strategist:cost
+│   ├── checklist.md            # /product-launch-strategist:checklist
+│   └── risk.md                 # /product-launch-strategist:risk
 ├── skills/
 │   └── product-launch-strategist/
 │       ├── SKILL.md

@@ -8,6 +8,7 @@
 | **설명** | 인디 개발자와 소규모 팀을 위한 제품 출시 전략 어드바이저 |
 | **버전** | 1.0.0 |
 | **트리거** | "런칭해도 될까?", "가격 정책", "경쟁 분석", "비즈니스 모델 검토" |
+| **명령어** | `/product-launch-strategist:analyze`, `/product-launch-strategist:pricing` 등 |
 
 ---
 
@@ -53,6 +54,17 @@ cp -r opengiver-skills/plugins/product-launch-strategist ~/.claude/plugins/
 ```
 
 ## 사용법
+
+### 슬래시 명령어
+
+```bash
+/product-launch-strategist:analyze      # 전체 분석 (모든 프레임워크)
+/product-launch-strategist:competitive  # 경쟁 분석
+/product-launch-strategist:pricing      # 가격 전략
+/product-launch-strategist:cost         # 비용 분석
+/product-launch-strategist:checklist    # 런칭 체크리스트
+/product-launch-strategist:risk         # 리스크 평가
+```
 
 ### 자연어 트리거
 
@@ -150,6 +162,13 @@ cp -r opengiver-skills/plugins/product-launch-strategist ~/.claude/plugins/
 product-launch-strategist/
 ├── .claude-plugin/
 │   └── plugin.json
+├── commands/
+│   ├── analyze.md              # /product-launch-strategist:analyze
+│   ├── competitive.md          # /product-launch-strategist:competitive
+│   ├── pricing.md              # /product-launch-strategist:pricing
+│   ├── cost.md                 # /product-launch-strategist:cost
+│   ├── checklist.md            # /product-launch-strategist:checklist
+│   └── risk.md                 # /product-launch-strategist:risk
 ├── skills/
 │   └── product-launch-strategist/
 │       ├── SKILL.md
