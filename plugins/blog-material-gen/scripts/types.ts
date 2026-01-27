@@ -171,3 +171,57 @@ export const TECH_SELECT_OPTIONS = [
 ] as const;
 
 export type TechOption = (typeof TECH_SELECT_OPTIONS)[number];
+
+// ========================================
+// LLM Provider Types
+// ========================================
+
+/** Supported LLM provider types */
+export type ProviderType = 'openai' | 'anthropic' | 'google';
+
+/** LLM configuration stored in config.json under "llm" key */
+export interface LLMConfig {
+  provider: ProviderType;
+  api_key: string;
+  model: string;
+}
+
+/** LLM input type (alias for BranchAnalysis) */
+export type LLMInput = BranchAnalysis;
+
+/** LLM provider interface - all providers must implement this */
+export interface LLMProvider {
+  readonly name: ProviderType;
+  generateDraft(input: LLMInput): Promise<BlogDraft | null>;
+}
+
+// ========================================
+// Model Lists by Provider
+// ========================================
+
+export const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4o'] as const;
+export type OpenAIModel = (typeof OPENAI_MODELS)[number];
+
+export const ANTHROPIC_MODELS = [
+  'claude-3-5-haiku-20241022',
+  'claude-3-5-sonnet-20241022',
+  'claude-3-opus-20240229',
+] as const;
+export type AnthropicModel = (typeof ANTHROPIC_MODELS)[number];
+
+export const GOOGLE_MODELS = ['gemini-1.5-flash', 'gemini-1.5-pro'] as const;
+export type GoogleModel = (typeof GOOGLE_MODELS)[number];
+
+/** All supported models by provider */
+export const PROVIDER_MODELS: Record<ProviderType, readonly string[]> = {
+  openai: OPENAI_MODELS,
+  anthropic: ANTHROPIC_MODELS,
+  google: GOOGLE_MODELS,
+};
+
+/** Default models by provider */
+export const DEFAULT_MODELS: Record<ProviderType, string> = {
+  openai: 'gpt-4o-mini',
+  anthropic: 'claude-3-5-haiku-20241022',
+  google: 'gemini-1.5-flash',
+};
