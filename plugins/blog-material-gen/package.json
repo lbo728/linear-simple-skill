@@ -7,14 +7,16 @@
     "generate": "tsx scripts/pipeline.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@google/generative-ai": "^0.24.1",
     "@notionhq/client": "^2.2.15",
-    "simple-git": "^3.25.0",
     "dotenv": "^16.4.5",
-    "openai": "^4.52.0"
+    "openai": "^4.52.0",
+    "simple-git": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
-    "typescript": "^5.3.3",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }
