@@ -312,3 +312,122 @@ export async function branchExists(workingDirectory: string, branchName: string)
     return false;
   }
 }
+
+export async function findBaseBranch(workingDirectory: string, currentBranch: string): Promise<string> {
+  const git: SimpleGit = simpleGit(workingDirectory);
+  const candidates = ['main', 'master', 'develop', 'dev'];
+  
+  try {
+    const branches = await git.branch(['-a']);
+    const dailyBranches = branches.all
+      .filter((b) => b.includes('daily/'))
+      .map((b) => b.replace('remotes/origin/', ''));
+    candidates.push(...dailyBranches);
+  } catch {
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const mergeBase = await git.raw(['merge-base', currentBranch, candidate]);
+      if (mergeBase.trim()) {
+        return candidate;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return 'main';
+}
+
+export async function analyzeCurrentBranchOnly(
+  workingDirectory: string,
+): Promise<BranchAnalysis> {
+  const git: SimpleGit = simpleGit(workingDirectory);
+  const currentBranch = await getCurrentBranch(workingDirectory);
+  
+  console.log(`📂 Analyzing current branch: ${currentBranch}`);
+  console.log(`📁 Working directory: ${workingDirectory}`);
+
+  const baseBranch = await findBaseBranch(workingDirectory, currentBranch);
+  console.log(`🔀 Base branch detected: ${baseBranch}`);
+
+  const commits = await getCommitsForCurrentBranch(git, currentBranch, baseBranch);
+  console.log(`📝 Found ${commits.length} commits`);
+
+  const prInfo = await getPRInfo(currentBranch, baseBranch);
+  const filesChanged = await getFilesChanged(git, currentBranch, baseBranch);
+
+  return {
+    branchName: currentBranch,
+    commits,
+    prInfo,
+    filesChanged,
+    summary: generateCurrentBranchSummary(commits, filesChanged),
+  };
+}
+
+async function getCommitsForCurrentBranch(
+  git: SimpleGit,
+  currentBranch: string,
+  baseBranch: string,
+): Promise<CommitInfo[]> {
+  try {
+    const mergeBase = await git.raw(['merge-base', currentBranch, baseBranch]);
+    const refRange = `${mergeBase.trim()}..${currentBranch}`;
+    
+    const log = await git.log([refRange, '--format=%H|%s|%b|%ai|%an', '--no-merges']);
+
+    const commits: CommitInfo[] = [];
+    for (const commit of log.all) {
+      const [hash, subject, body, date, author] = (commit.message || '').split('|');
+      if (!hash || !subject) continue;
+
+      const parsed = parseConventionalCommit(subject);
+      
+      let files: string[] = [];
+      try {
+        const diffSummary = await git.diffSummary([`${hash}^`, hash]);
+        files = diffSummary.files.map((f) => f.file);
+      } catch {
+        files = [];
+      }
+
+      commits.push({
+        hash: hash.substring(0, 7),
+        type: parsed.type,
+        scope: parsed.scope,
+        subject: parsed.subject,
+        body: body || undefined,
+        files,
+        date,
+        author,
+      });
+    }
+
+    return commits;
+  } catch (error) {
+    console.error(`Error getting commits for current branch:`, error);
+    return [];
+  }
+}
+
+function generateCurrentBranchSummary(commits: CommitInfo[], filesChanged: FileChange[]): string {
+  const commitTypes = commits.reduce(
+    (acc, c) => {
+      acc[c.type] = (acc[c.type] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
+  const typeDescriptions = Object.entries(commitTypes)
+    .map(([type, count]) => `${type}(${count})`)
+    .join(', ');
+
+  const languages = [...new Set(filesChanged.map((f) => f.language).filter(Boolean))];
+  const totalAdditions = filesChanged.reduce((sum, f) => sum + f.additions, 0);
+  const totalDeletions = filesChanged.reduce((sum, f) => sum + f.deletions, 0);
+
+  return `${commits.length}개 커밋 (${typeDescriptions}), ${filesChanged.length}개 파일 변경 (+${totalAdditions}/-${totalDeletions}), 주요 언어: ${languages.join(', ') || 'N/A'}`;
+}

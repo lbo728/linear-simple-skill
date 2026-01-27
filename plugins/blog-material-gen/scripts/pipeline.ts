@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { analyzeDailyBranch, getCurrentBranch, getRecentDailyBranches } from './git-analyzer.js';
+import { analyzeDailyBranch, analyzeCurrentBranchOnly, getCurrentBranch, getRecentDailyBranches } from './git-analyzer.js';
 import { extractMeaningfulCodeBlocks } from './code-masker.js';
 import { createNotionClient, createOrAppendBlogMaterialPage, testNotionConnection, extractDateFromBranch } from './notion-client.js';
 import type {
@@ -389,6 +389,93 @@ function extractWorkspaceName(workingDirectory: string): string {
   return path.basename(workingDirectory);
 }
 
+export async function generateBlogMaterialFromCurrentBranch(config: Omit<PipelineConfig, 'dailyBranch'>): Promise<PipelineResult> {
+  const errors: string[] = [];
+  const workspaceName = extractWorkspaceName(config.workingDirectory);
+  const today = new Date().toISOString().split('T')[0];
+
+  console.log('🚀 Starting blog material generation from current branch...');
+  console.log(`   Working Dir: ${config.workingDirectory}`);
+  console.log(`   Workspace: ${workspaceName}`);
+  console.log(`   Target Date: ${today}`);
+
+  try {
+    const notion = createNotionClient(config.notionApiKey);
+    
+    console.log('🔗 Testing Notion connection...');
+    const isConnected = await testNotionConnection(notion, config.notionDatabaseId);
+    if (!isConnected) {
+      return {
+        success: false,
+        branchesAnalyzed: 0,
+        blogIdeasGenerated: 0,
+        errors: ['Failed to connect to Notion. Please check your API key and database ID.'],
+      };
+    }
+    console.log('✅ Notion connection successful');
+
+    console.log('📂 Analyzing current branch...');
+    const branchAnalysis = await analyzeCurrentBranchOnly(config.workingDirectory);
+    console.log(`✅ Analyzed branch: ${branchAnalysis.branchName}`);
+
+    if (branchAnalysis.commits.length === 0) {
+      return {
+        success: false,
+        branchesAnalyzed: 0,
+        blogIdeasGenerated: 0,
+        errors: ['No commits found in current branch compared to base branch.'],
+      };
+    }
+
+    console.log('🔧 Processing branch data...');
+    const branchMaterial = processBranchAnalysis(branchAnalysis);
+    const blogIdea = generateBlogIdea(branchAnalysis);
+    const allTechs = [...new Set(branchMaterial.tech)];
+
+    const dailyData: DailyBranchData = {
+      dailyBranch: branchAnalysis.branchName,
+      date: today,
+      summary: branchAnalysis.summary,
+      blogIdeas: [blogIdea],
+      branches: [branchMaterial],
+      tags: blogIdea.tags,
+      tech: allTechs,
+    };
+
+    const notionPage = await createOrAppendBlogMaterialPage(
+      notion,
+      config.notionDatabaseId,
+      dailyData,
+      workspaceName,
+    );
+
+    if (notionPage.appended) {
+      console.log(`✅ Appended to existing Notion page: ${notionPage.url}`);
+    } else {
+      console.log(`✅ Created new Notion page: ${notionPage.url}`);
+    }
+
+    return {
+      success: true,
+      notionUrl: notionPage.url,
+      branchesAnalyzed: 1,
+      blogIdeasGenerated: 1,
+      appended: notionPage.appended,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('❌ Pipeline failed:', errorMessage);
+    errors.push(errorMessage);
+
+    return {
+      success: false,
+      branchesAnalyzed: 0,
+      blogIdeasGenerated: 0,
+      errors,
+    };
+  }
+}
+
 export async function generateBlogMaterial(config: PipelineConfig): Promise<PipelineResult> {
   const errors: string[] = [];
   const workspaceName = extractWorkspaceName(config.workingDirectory);
@@ -478,8 +565,10 @@ export async function generateBlogMaterial(config: PipelineConfig): Promise<Pipe
 async function main() {
   const startTime = Date.now();
   const args = process.argv.slice(2);
-  let dailyBranch = args[0];
-  const workingDirectory = args[1] || process.cwd();
+  const isCurrentBranchMode = args.includes('--current-branch');
+  const filteredArgs = args.filter(arg => arg !== '--current-branch');
+  let dailyBranch = filteredArgs[0];
+  const workingDirectory = filteredArgs[1] || process.cwd();
 
   const userConfig = loadConfig();
   
@@ -490,28 +579,41 @@ async function main() {
     process.exit(1);
   }
 
-  if (!dailyBranch) {
-    console.log('ℹ️  No daily branch specified. Looking for recent daily branches...');
-    const recentBranches = await getRecentDailyBranches(workingDirectory);
-    
-    if (recentBranches.length > 0) {
-      dailyBranch = recentBranches[0];
-      console.log(`   Using most recent: ${dailyBranch}`);
-    } else {
-      const currentBranch = await getCurrentBranch(workingDirectory);
-      dailyBranch = currentBranch;
-      console.log(`   Using current branch: ${dailyBranch}`);
+  let result: PipelineResult;
+  let branchForLog: string;
+
+  if (isCurrentBranchMode) {
+    branchForLog = await getCurrentBranch(workingDirectory);
+    result = await generateBlogMaterialFromCurrentBranch({
+      workingDirectory,
+      notionApiKey: userConfig.api_key,
+      notionDatabaseId: userConfig.database_id,
+    });
+  } else {
+    if (!dailyBranch) {
+      console.log('ℹ️  No daily branch specified. Looking for recent daily branches...');
+      const recentBranches = await getRecentDailyBranches(workingDirectory);
+      
+      if (recentBranches.length > 0) {
+        dailyBranch = recentBranches[0];
+        console.log(`   Using most recent: ${dailyBranch}`);
+      } else {
+        const currentBranch = await getCurrentBranch(workingDirectory);
+        dailyBranch = currentBranch;
+        console.log(`   Using current branch: ${dailyBranch}`);
+      }
     }
+
+    const config: PipelineConfig = {
+      dailyBranch,
+      workingDirectory,
+      notionApiKey: userConfig.api_key,
+      notionDatabaseId: userConfig.database_id,
+    };
+
+    result = await generateBlogMaterial(config);
+    branchForLog = dailyBranch;
   }
-
-  const config: PipelineConfig = {
-    dailyBranch,
-    workingDirectory,
-    notionApiKey: userConfig.api_key,
-    notionDatabaseId: userConfig.database_id,
-  };
-
-  const result = await generateBlogMaterial(config);
   const workspaceName = extractWorkspaceName(workingDirectory);
   const duration = Date.now() - startTime;
 
@@ -533,7 +635,7 @@ async function main() {
   const logEntry: LogEntry = {
     timestamp: new Date().toISOString(),
     success: result.success,
-    dailyBranch,
+    dailyBranch: branchForLog,
     workspaceName,
     result,
     duration,
@@ -547,14 +649,14 @@ async function main() {
         userConfig.slack_webhook_url,
         result,
         workspaceName,
-        dailyBranch,
+        branchForLog,
       );
     } else {
       await sendSlackFailureNotification(
         userConfig.slack_webhook_url,
         result,
         workspaceName,
-        dailyBranch,
+        branchForLog,
         logFilePath,
       );
     }
