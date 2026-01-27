@@ -20,6 +20,8 @@ Daily Git 브랜치를 자동 분석하여 Notion 데이터베이스에 블로�
 - 같은 날짜 다른 워크스페이스 → 기존 페이지에 `[워크스페이스명]` 태그로 추가
 - 민감 정보 자동 마스킹 (API 키, 토큰, 비밀번호 등)
 - Slack 알림 (선택)
+- **LLM 기반 블로그 초안 생성** - OpenAI, Anthropic, Google Gemini를 사용한 AI 블로그 초안 자동 생성 (선택사항)
+- **PR 및 커밋 링크** - Notion 출력에 GitHub URL 자동 생성으로 쉬운 탐색
 
 ## 설치
 
@@ -79,6 +81,7 @@ Agent가 다음 정보를 순서대로 요청합니다:
 | Notion API Key | O | `secret_` 로 시작하는 키 |
 | Database ID | O | 32자리 hex 문자열 |
 | Slack Webhook URL | X | 알림 받을 채널의 Webhook URL |
+| LLM Provider | X | 블로그 초안 생성을 위한 OpenAI, Anthropic, Google Gemini |
 
 설정은 `~/.config/blog-material-gen/config.json`에 저장됩니다.
 
@@ -101,6 +104,46 @@ Agent가 다음 정보를 순서대로 요청합니다:
 - 분석된 브랜치 수
 - 생성된 블로그 아이디어 수
 - Notion 페이지 링크 버튼
+
+## LLM Provider (선택사항)
+
+플러그인은 자동 블로그 초안 생성을 위해 3가지 LLM provider를 지원합니다. 필요에 따라 선택하세요:
+
+### 지원 Provider
+
+| Provider | 모델 | 무료 티어 | API Key URL |
+|----------|------|-----------|-------------|
+| **OpenAI** | gpt-4o-mini, gpt-4o | 없음 | [API Key 발급](https://platform.openai.com/api-keys) |
+| **Anthropic** | Claude 3.5 Haiku, Sonnet, Opus | 없음 | [API Key 발급](https://console.anthropic.com/settings/keys) |
+| **Google Gemini** | gemini-1.5-flash, gemini-1.5-pro | 있음 (분당 15회, 일일 1500회) | [API Key 발급](https://aistudio.google.com/app/apikey) |
+
+### 추천
+
+**Google Gemini Flash**를 대부분의 사용자에게 추천합니다:
+- 넉넉한 무료 티어
+- 빠른 응답 속도
+- 좋은 품질의 블로그 초안
+
+### 설정
+
+LLM provider는 setup 중 설정하거나 (`/blog-material-gen:setup`) 나중에 `/blog-material-gen:change-llm`으로 변경할 수 있습니다.
+
+**Config 형식**:
+```json
+{
+  "api_key": "secret_xxx",
+  "database_id": "abc123",
+  "llm": {
+    "provider": "google",
+    "api_key": "AIza...",
+    "model": "gemini-1.5-flash"
+  }
+}
+```
+
+### LLM 비활성화
+
+LLM 기능을 비활성화하려면 config.json에서 `llm` 객체를 제거하거나 `/blog-material-gen:change-llm`에서 "비활성화"를 선택하세요.
 
 ## 사용법
 
@@ -155,7 +198,8 @@ blog-material-gen/
 ├── .claude-plugin/
 │   └── plugin.json           # 플러그인 매니페스트
 ├── commands/
-│   └── setup.md              # /blog-material-gen:setup
+│   ├── setup.md              # /blog-material-gen:setup
+│   └── change-llm.md         # /blog-material-gen:change-llm
 ├── skills/
 │   └── blog-material-gen/
 │       └── SKILL.md          # 자연어 스킬
@@ -164,6 +208,11 @@ blog-material-gen/
 │   ├── git-analyzer.ts       # Git 분석
 │   ├── code-masker.ts        # 민감 정보 마스킹
 │   ├── notion-client.ts      # Notion API 클라이언트
+│   ├── llm-client.ts         # LLM provider factory
+│   ├── providers/            # LLM provider 구현체
+│   │   ├── openai.ts
+│   │   ├── anthropic.ts
+│   │   └── google.ts
 │   └── pipeline.ts           # 메인 파이프라인
 ├── package.json              # 의존성
 ├── README.md
@@ -188,6 +237,18 @@ blog-material-gen/
 
 1. Webhook URL이 `https://hooks.slack.com/services/` 로 시작하는지 확인
 2. Slack App이 해당 채널에 접근 권한이 있는지 확인
+
+### LLM 초안 생성이 작동하지 않음
+
+1. config.json에 LLM 설정이 있는지 확인
+2. 선택한 provider의 API key가 유효한지 확인
+3. 콘솔에서 provider별 에러 메시지 확인
+4. `/blog-material-gen:change-llm`으로 다른 provider로 전환 시도
+
+**Provider별 확인사항**:
+- **OpenAI**: API key가 `sk-`로 시작하는지 확인
+- **Anthropic**: API key가 `sk-ant-`로 시작하는지 확인
+- **Google**: API key가 `AIza`로 시작하는지 확인
 
 ## 라이선스
 

@@ -20,6 +20,8 @@ A Claude Code plugin that automatically analyzes daily Git branches and generate
 - Same date, different workspace → Append to existing page with `[workspace]` tag
 - Auto-mask sensitive data (API keys, tokens, passwords, etc.)
 - Slack notifications (optional)
+- **LLM-powered blog draft generation** - Optional AI-generated blog drafts using OpenAI, Anthropic, or Google Gemini
+- **PR and commit links** - Auto-generated GitHub URLs in Notion output for easy navigation
 
 ## Installation
 
@@ -79,6 +81,7 @@ Agent will ask for the following:
 | Notion API Key | Yes | Key starting with `secret_` |
 | Database ID | Yes | 32-character hex string |
 | Slack Webhook URL | No | Webhook URL for notifications |
+| LLM Provider | No | OpenAI, Anthropic, or Google Gemini for blog draft generation |
 
 Configuration is saved to `~/.config/blog-material-gen/config.json`.
 
@@ -101,6 +104,46 @@ On successful pipeline, Slack receives:
 - Number of branches analyzed
 - Number of blog ideas generated
 - Notion page link button
+
+## LLM Providers (Optional)
+
+The plugin supports 3 LLM providers for automatic blog draft generation. Choose one based on your needs:
+
+### Supported Providers
+
+| Provider | Models | Free Tier | API Key URL |
+|----------|--------|-----------|-------------|
+| **OpenAI** | gpt-4o-mini, gpt-4o | No | [Get API Key](https://platform.openai.com/api-keys) |
+| **Anthropic** | Claude 3.5 Haiku, Sonnet, Opus | No | [Get API Key](https://console.anthropic.com/settings/keys) |
+| **Google Gemini** | gemini-1.5-flash, gemini-1.5-pro | Yes (15 req/min, 1500/day) | [Get API Key](https://aistudio.google.com/app/apikey) |
+
+### Recommendation
+
+**Google Gemini Flash** is recommended for most users:
+- Free tier with generous limits
+- Fast response times
+- Good quality blog drafts
+
+### Configuration
+
+LLM provider is configured during setup (`/blog-material-gen:setup`) or can be changed later with `/blog-material-gen:change-llm`.
+
+**Config format**:
+```json
+{
+  "api_key": "secret_xxx",
+  "database_id": "abc123",
+  "llm": {
+    "provider": "google",
+    "api_key": "AIza...",
+    "model": "gemini-1.5-flash"
+  }
+}
+```
+
+### Disabling LLM
+
+To disable LLM features, remove the `llm` object from config.json or use `/blog-material-gen:change-llm` and select "Disable".
 
 ## Usage
 
@@ -155,7 +198,8 @@ blog-material-gen/
 ├── .claude-plugin/
 │   └── plugin.json           # Plugin manifest
 ├── commands/
-│   └── setup.md              # /blog-material-gen:setup
+│   ├── setup.md              # /blog-material-gen:setup
+│   └── change-llm.md         # /blog-material-gen:change-llm
 ├── skills/
 │   └── blog-material-gen/
 │       └── SKILL.md          # Natural language skill
@@ -164,6 +208,11 @@ blog-material-gen/
 │   ├── git-analyzer.ts       # Git analysis
 │   ├── code-masker.ts        # Sensitive data masking
 │   ├── notion-client.ts      # Notion API client
+│   ├── llm-client.ts         # LLM provider factory
+│   ├── providers/            # LLM provider implementations
+│   │   ├── openai.ts
+│   │   ├── anthropic.ts
+│   │   └── google.ts
 │   └── pipeline.ts           # Main pipeline
 ├── package.json              # Dependencies
 ├── README.md
@@ -188,6 +237,18 @@ blog-material-gen/
 
 1. Verify Webhook URL starts with `https://hooks.slack.com/services/`
 2. Ensure Slack App has access to the channel
+
+### LLM draft generation not working
+
+1. Check LLM configuration exists in config.json
+2. Verify API key is valid for the selected provider
+3. Check provider-specific error messages in console
+4. Try switching to a different provider with `/blog-material-gen:change-llm`
+
+**Provider-specific checks**:
+- **OpenAI**: Ensure API key starts with `sk-`
+- **Anthropic**: Ensure API key starts with `sk-ant-`
+- **Google**: Ensure API key starts with `AIza`
 
 ## License
 
