@@ -132,6 +132,16 @@ function callout(text: string, emoji: string = '💡'): BlockObjectRequest {
   };
 }
 
+function linkPreview(url: string): BlockObjectRequest {
+  return {
+    object: 'block',
+    type: 'link_preview',
+    link_preview: {
+      url,
+    },
+  };
+}
+
 function buildBranchMaterialBlocks(branch: BranchMaterial, workspaceName?: string): BlockObjectRequest[] {
   const branchTitle = workspaceName 
     ? `📌 [${workspaceName}] ${branch.name}`
@@ -147,6 +157,21 @@ function buildBranchMaterialBlocks(branch: BranchMaterial, workspaceName?: strin
 
   if (branch.tech.length > 0) {
     blocks.push(bulletItem(`**주요 기술**: ${branch.tech.join(', ')}`));
+  }
+
+  if (branch.prUrl) {
+    blocks.push(paragraph(`🔗 **PR**: [#${branch.prUrl.split('/').pop()}](${branch.prUrl})`));
+    blocks.push(linkPreview(branch.prUrl));
+  }
+
+  if (branch.commitUrls.length > 0) {
+    const commitsWithUrl = branch.commitUrls.filter((c) => c.url);
+    if (commitsWithUrl.length > 0) {
+      blocks.push(heading3('🔗 커밋'));
+      for (const commit of commitsWithUrl.slice(0, 5)) {
+        blocks.push(bulletItem(`[${commit.hash}](${commit.url})`));
+      }
+    }
   }
 
   if (branch.codeBlocks.length > 0) {

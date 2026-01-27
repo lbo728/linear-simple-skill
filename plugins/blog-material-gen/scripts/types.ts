@@ -63,6 +63,8 @@ export interface BranchMaterial {
   troubleshooting: TroubleshootingItem[];
   learnings: string[];
   blogIdeaTitle: string;
+  prUrl?: string;
+  commitUrls: Array<{ hash: string; url: string }>;
 }
 
 export interface TroubleshootingItem {

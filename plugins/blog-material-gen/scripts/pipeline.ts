@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { analyzeDailyBranch, analyzeCurrentBranchOnly, getCurrentBranch, getRecentDailyBranches } from './git-analyzer.js';
+import { analyzeDailyBranch, analyzeCurrentBranchOnly, getCurrentBranch, getRecentDailyBranches, getRepoUrl } from './git-analyzer.js';
 import { extractMeaningfulCodeBlocks } from './code-masker.js';
 import { createNotionClient, createOrAppendBlogMaterialPage, testNotionConnection, extractDateFromBranch } from './notion-client.js';
 import type {
@@ -315,7 +315,7 @@ function generateBlogIdea(branch: BranchAnalysis): BlogIdea {
   };
 }
 
-function processBranchAnalysis(branch: BranchAnalysis): BranchMaterial {
+function processBranchAnalysis(branch: BranchAnalysis, repoUrl?: string): BranchMaterial {
   const codeBlocks = extractMeaningfulCodeBlocks(branch.filesChanged, 3);
   const troubleshooting = extractTroubleshooting(branch);
   const learnings = extractLearnings(branch);
@@ -326,6 +326,16 @@ function processBranchAnalysis(branch: BranchAnalysis): BranchMaterial {
     ? extractRequirements(branch.prInfo.body)
     : branch.commits.map((c) => c.subject).join(', ');
 
+  const commitUrls = repoUrl
+    ? branch.commits.map((c) => ({
+        hash: c.hash,
+        url: `${repoUrl}/commit/${c.hash}`,
+      }))
+    : branch.commits.map((c) => ({
+        hash: c.hash,
+        url: '',
+      }));
+
   return {
     name: branch.branchName,
     requirements: requirements.substring(0, 500),
@@ -334,6 +344,8 @@ function processBranchAnalysis(branch: BranchAnalysis): BranchMaterial {
     troubleshooting,
     learnings,
     blogIdeaTitle: blogIdea.title,
+    prUrl: branch.prInfo?.url,
+    commitUrls,
   };
 }
 
@@ -427,10 +439,11 @@ export async function generateBlogMaterialFromCurrentBranch(config: Omit<Pipelin
       };
     }
 
-    console.log('🔧 Processing branch data...');
-    const branchMaterial = processBranchAnalysis(branchAnalysis);
-    const blogIdea = generateBlogIdea(branchAnalysis);
-    const allTechs = [...new Set(branchMaterial.tech)];
+     console.log('🔧 Processing branch data...');
+     const repoUrl = await getRepoUrl(config.workingDirectory);
+     const branchMaterial = processBranchAnalysis(branchAnalysis, repoUrl);
+     const blogIdea = generateBlogIdea(branchAnalysis);
+     const allTechs = [...new Set(branchMaterial.tech)];
 
     const dailyData: DailyBranchData = {
       dailyBranch: branchAnalysis.branchName,
@@ -513,10 +526,11 @@ export async function generateBlogMaterial(config: PipelineConfig): Promise<Pipe
       };
     }
 
-    console.log('🔧 Processing branch data...');
-    const branchMaterials = branchAnalyses.map(processBranchAnalysis);
-    const blogIdeas = branchAnalyses.map(generateBlogIdea);
-    const allTechs = [...new Set(branchMaterials.flatMap((b) => b.tech))];
+     console.log('🔧 Processing branch data...');
+     const repoUrl = await getRepoUrl(config.workingDirectory);
+     const branchMaterials = branchAnalyses.map((b) => processBranchAnalysis(b, repoUrl));
+     const blogIdeas = branchAnalyses.map(generateBlogIdea);
+     const allTechs = [...new Set(branchMaterials.flatMap((b) => b.tech))];
 
     const dailyData: DailyBranchData = {
       dailyBranch: config.dailyBranch,

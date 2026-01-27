@@ -139,6 +139,34 @@ export async function getCommitsForBranch(
   }
 }
 
+export async function getRepoUrl(workingDirectory: string): Promise<string | undefined> {
+  try {
+    const { stdout } = await execAsync('git remote get-url origin', { cwd: workingDirectory });
+    const remoteUrl = stdout.trim();
+    
+    // Extract GitHub URL from various formats
+    // Supports: https://github.com/owner/repo.git, git@github.com:owner/repo.git, etc.
+    const httpsMatch = remoteUrl.match(/https:\/\/github\.com\/([^/]+)\/(.+?)(\.git)?$/);
+    const sshMatch = remoteUrl.match(/git@github\.com:([^/]+)\/(.+?)(\.git)?$/);
+    
+    if (httpsMatch) {
+      const [, owner, repo] = httpsMatch;
+      return `https://github.com/${owner}/${repo.replace(/\.git$/, '')}`;
+    }
+    
+    if (sshMatch) {
+      const [, owner, repo] = sshMatch;
+      return `https://github.com/${owner}/${repo.replace(/\.git$/, '')}`;
+    }
+    
+    // Not a GitHub repo
+    return undefined;
+  } catch (error) {
+    // Gracefully handle errors (e.g., not a git repo, no remote)
+    return undefined;
+  }
+}
+
 export async function getPRInfo(branchName: string, baseBranch: string): Promise<PRInfo | undefined> {
   try {
     const { stdout } = await execAsync(
