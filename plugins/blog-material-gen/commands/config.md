@@ -1,23 +1,20 @@
 ---
 description: Open config.json in editor for direct editing
-allowed-tools: Read, AskUserQuestion
+allowed-tools: Bash(ls:*), Bash(open:*), Bash(xdg-open:*), Bash(code:*), Bash(vim:*), Bash(nano:*)
 ---
 
 # Open Config File
 
 **Command**: `/blog-material-gen:config`
 
-**Purpose**: Open the config.json file in your editor for direct editing.
+**Purpose**: Open the config.json file in your default editor for direct editing.
 
 **Prerequisites**:
 - Configuration file exists at `~/.config/blog-material-gen/config.json`
 
 **Workflow**:
 1. Check if config file exists
-2. Read current config
-3. Show current config to user
-4. Ask if user wants to open in editor
-5. If yes, open the file
+2. Open file in user's default editor
 
 ---
 
@@ -26,7 +23,7 @@ allowed-tools: Read, AskUserQuestion
 Check if config file exists:
 
 ```bash
-ls ~/.config/blog-material-gen/config.json
+ls ~/.config/blog-material-gen/config.json 2>/dev/null
 ```
 
 ### If config.json doesn't exist:
@@ -38,47 +35,34 @@ ls ~/.config/blog-material-gen/config.json
 
 ---
 
-## Step 2: Read Current Config
+## Step 2: Open in Editor
 
-Use Read tool to load `~/.config/blog-material-gen/config.json`.
+Open the config file in the user's default editor.
 
-Parse and display current configuration:
-
-```
-📝 Current Configuration:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Notion:
-  ✓ API Key: secret_xxx...
-  ✓ Database ID: abc123...
-  ✓ Database Name: {name}
-
-Slack:
-  {✓ or ✗} Webhook URL: {url or "Not configured"}
-
-LLM:
-  {✓ or ✗} Provider: {provider or "Not configured"}
-  {✓ or ✗} Model: {model}
-  {✓ or ✗} API Key: {api_key first 10 chars}...
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Config Location: ~/.config/blog-material-gen/config.json
+**macOS**:
+```bash
+open ~/.config/blog-material-gen/config.json
 ```
 
----
-
-## Step 3: Ask User
-
-Use **AskUserQuestion**:
-- Question: "Do you want to open config.json in editor for direct editing?"
-- Options:
-  - **Yes** - "Open in editor"
-  - **No** - "Cancel"
-
-### If Yes:
-- Show message:
+**Linux**:
+```bash
+xdg-open ~/.config/blog-material-gen/config.json
 ```
-Opening config file in editor...
+
+**Windows (WSL)**:
+```bash
+explorer.exe $(wslpath -w ~/.config/blog-material-gen/config.json)
+```
+
+**Alternative (if VS Code is installed)**:
+```bash
+code ~/.config/blog-material-gen/config.json
+```
+
+After opening, show this message:
+
+```
+✅ Opening config file in your default editor...
 
 📝 Config file location:
 ~/.config/blog-material-gen/config.json
@@ -93,11 +77,6 @@ Opening config file in editor...
 - Required fields: api_key, database_id
 - LLM config is optional
 ```
-
-- Open file: `~/.config/blog-material-gen/config.json`
-
-### If No:
-- Exit command
 
 ---
 
